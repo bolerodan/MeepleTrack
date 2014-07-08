@@ -36,6 +36,11 @@ def build_game(gameid,expansions=False):
     xml_string = response.read()
 
     bg_tree = et.fromstring(xml_string)
+    def getText(node,key):
+        try:
+            return node.find(key).text 
+        except AttributeError:
+            return None
 
     if bg_tree.find('boardgame').find('error') is not None:
         """This happens if BGG cannot find the board game.. so get their error message"""
@@ -43,14 +48,14 @@ def build_game(gameid,expansions=False):
     bg_xml = bg_tree.find('boardgame')
     game = Game()
     game.game_id = gameid
-    game.name = bg_xml.find('name').text
-    game.thumbnail = bg_xml.find('thumbnail').text
-    game.image = bg_xml.find('image').text
-    game.minplayers = bg_xml.find('minplayers').text
-    game.yearpublished = bg_xml.find('yearpublished').text
-    game.maxplayers = bg_xml.find('maxplayers').text
-    game.playingtime = bg_xml.find('playingtime').text
-    game.description = bg_xml.find('description').text
+    game.name = getText(bg_xml,'name')
+    game.thumbnail = getText(bg_xml,'thumbnail')
+    game.image = getText(bg_xml,'image')
+    game.minplayers = getText(bg_xml,'minplayers')
+    game.yearpublished = getText(bg_xml,'yearpublished')
+    game.maxplayers = getText(bg_xml,'maxplayers')
+    game.playingtime = getText(bg_xml,'playingtime')
+    game.description = getText(bg_xml,'description')
     for publisher in bg_xml.iter('boardgamepublisher'):
         game.addPublisher(publisher.text)
     for category in bg_xml.iter('boardgamecategory'):
@@ -75,6 +80,7 @@ def build_game(gameid,expansions=False):
                 except IntegrityError:
                     pass # :(!!!
     return game
+
 
 
 def build_search(term):

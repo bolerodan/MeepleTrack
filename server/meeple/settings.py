@@ -1,13 +1,13 @@
 DATABASE = {
     "NAME": 'meeple',
-    "USER": 'root',
-    "PASS": '',
+    "USER": 'postgres',
+    "PASS": 'Wd15aeds',
     "HOST": 'localhost',
-    "PORT": '3600'
+    "PORT": '5432'
 }
 
-#connectstring = "mysql+mysqldb://%(USER)s:%(PASS)s@%(HOST)s:%(PORT)s/%(NAME)s" % DATABASE
-connectstring = 'sqlite:///../meeples.db'
+connectstring = "postgresql://%(USER)s:%(PASS)s@%(HOST)s:%(PORT)s/%(NAME)s" % DATABASE
+#connectstring = 'sqlite:///../meeples.db'
 
 
 secret_key = '767^&^6767jfdghkjfhgKyi3y98(*&^#($&9387429874'
