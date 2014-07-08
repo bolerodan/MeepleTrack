@@ -90,7 +90,7 @@ class Game(meeple.db.Model):
 
     def as_search(self):
         result = {}
-        result['game_id'] = self.game_id
+        result['id'] = self.game_id
         result['name'] = self.name        
         result['image'] = self.image
         result['thumbnail'] = self.thumbnail      
@@ -99,7 +99,7 @@ class Game(meeple.db.Model):
         from api_tools import date_format
         result = {}
 
-        result['game_id'] = self.game_id
+        result['id'] = self.game_id
         result['created'] = date_format(self.created)
         result['name'] = self.name
         result['description'] =self.description
