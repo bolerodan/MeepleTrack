@@ -3,6 +3,7 @@ import json
 import datetime
 import decimal
 from flask import Response
+from flask.json import JSONEncoder as BaseJSONEncoder
 
 def decimal_default(obj):
     if isinstance(obj, decimal.Decimal):
@@ -29,6 +30,26 @@ def verify_email(email):
         return False
     return True
 
+
+class JSONEncoder(BaseJSONEncoder):
+    """Custom :class:`JSONEncoder` which respects objects that include the
+    :class:`JsonSerializer` mixin.
+    """
+    def default(self, obj):
+        if isinstance(obj, decimal.Decimal):
+            return float(obj)
+        elif isinstance(obj,datetime.date):
+            try:
+                return datetime.datetime.strptime(date, '%Y-%m-%dT%H:%M:%S.000Z')
+            except ValueError:
+                try:
+                    return datetime.datetime.fromtimestamp(int(date))
+                except valueError:
+                    return None            
+
+        return super(JSONEncoder, self).default(obj)   
+
+
 def api_package(status='success', status_code=200, data=None, errors=None):
     """
     Generate a nice api package that follows the specifications of the BIRG API.
@@ -47,7 +68,7 @@ def api_package(status='success', status_code=200, data=None, errors=None):
         if errors is not None:
             package['errors'] = errors
 
-        js = json.dumps(package, default=decimal_default)
+        js = json.dumps(package)
         resp = Response(js, status=status_code, mimetype='application/json')
         resp.headers.add('Cache-Control', 'no-cache')
 

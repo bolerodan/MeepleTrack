@@ -5,6 +5,7 @@ from cerberus import Validator
 from api_tools import api_package, api_error, api_validation_error,date_parse
 from authentication import authenticate, authenticated_user
 from properties import PropertyDef,Property,GameSessionProperties
+from flask.ext.security import current_user
 from game_session import GameSession
 from game import Game
 from user import User
@@ -57,7 +58,7 @@ def create_game_sessions():
 
     newgamesession = GameSession()
 
-    user = authenticated_user()
+    user = current_user
     if form['host_is_playing'] is True:
         newgamesession.players.append(user) #the user/host is also a player.
         addplayer_helper(newgamesession,user)
@@ -108,7 +109,7 @@ def add_player_to_session(id):
     if gs is None:
         return api_error("Unable to find a game session by that ID")
 
-    new_player = User.query.filter_by(user_id=form['user_id']).first()
+    new_player = User.query.filter_by(id=form['user_id']).first()
 
     if new_player is None:
         return api_error("Unable to find the user_id to add to this game session")  
@@ -133,6 +134,7 @@ def gamesession_property(id):
     is the host
     """
     form = request.get_json()
+    user = current_user
     if form is None:
         return api_error("Invalid Request")
 
@@ -145,7 +147,7 @@ def gamesession_property(id):
     if v.validate(form) is False:
         return api_validation_error(v.errors)   
 
-    gs = GameSession.query.filter_by(id=id).first()
+    gs = GameSession.query.filter_by(id=id,host_id=user.id).first()
     if gs is None:
         return api_error("Unable to find a game session by that ID")
 
@@ -153,7 +155,7 @@ def gamesession_property(id):
     if propdef is None:
         return api_error("Unknown property definition")
 
-    player = User.query.filter(User.user_id == form['player_id']).first()
+    player = User.query.filter(User.id == form['player_id']).first()
     if player is None:
         return api_error("Unknown user")
 

@@ -5,6 +5,13 @@ from game import Game
 from sqlalchemy.exc import IntegrityError
 from meeple_exceptions import GameNotFound
 
+def getText(node,key):
+    try:
+        return node.find(key).text 
+    except AttributeError:
+        return None
+
+
 #get builtin properties..duh
 def get_builtin_properties(as_dict=False):
     from properties import PropertyDef
@@ -36,11 +43,6 @@ def build_game(gameid,expansions=False):
     xml_string = response.read()
 
     bg_tree = et.fromstring(xml_string)
-    def getText(node,key):
-        try:
-            return node.find(key).text 
-        except AttributeError:
-            return None
 
     if bg_tree.find('boardgame').find('error') is not None:
         """This happens if BGG cannot find the board game.. so get their error message"""
@@ -94,5 +96,6 @@ def build_search(term):
         result = {}
         result['name'] = r.find('name').text
         result['id'] = r.attrib['objectid']
+        result['thumbnail'] = getText(r,'thumbnail')
         results.append(result)
     return results

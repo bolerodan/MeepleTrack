@@ -13,7 +13,7 @@ class PropertyDef(meeple.db.Model):
     propdef_id = Column(Integer, primary_key=True)
     name = Column(String(64),nullable=False)
     fieldtype=Column(Enum('string','integer','float',name='fieldtypes'),default='integer')
-    creator_id = Column(Integer,ForeignKey("user.user_id"),nullable=True) #Does NOT need to be linked to a user
+    creator_id = Column(Integer,ForeignKey("user.id"),nullable=True) #Does NOT need to be linked to a user
     def as_dict(self):
         result = {}
         result["propdef_id"] = self.propdef_id
@@ -67,7 +67,7 @@ class GameSessionProperties(meeple.db.Model):
     __tablename__ = "gamesession_properties"
     id = Column(Integer,primary_key=True)
     gamesession_id = Column(ForeignKey("game_session.id"),nullable=False,primary_key = True)
-    player_id = Column(ForeignKey("user.user_id"),nullable=False,primary_key = True)
+    player_id = Column(ForeignKey("user.id"),nullable=False,primary_key = True)
     property_id = Column(ForeignKey("property.property_id"),nullable=False,primary_key = True)
     property = relationship("Property")
     gamesession = relationship("GameSession")

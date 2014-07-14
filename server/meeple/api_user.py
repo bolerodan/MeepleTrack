@@ -1,32 +1,17 @@
 import meeple
 import datetime
 from flask import request
+from flask.ext.security import auth_token_required,current_user
 from api_tools import api_package, api_error, api_error_missing, api_not_found, verify_email
 from authentication import authenticate, authenticated_user
 from crossdomain import crossdomain
 from user import User, UserPasswordReset
 
-"""
-Ability to merge accounts?
-
-Primary key of a user is an email address.
-A user returns a list of sites they are members of.
-
-When admins create an account, require a secondary (optional third) contact.
-"""
-
-
-@meeple.api.route('/', endpoint="api_test_auth", methods=['GET'])
-@crossdomain(origin='*')
-@authenticate
-def api_test_auth():
-    return api_package()
-
 
 
 @meeple.api.route('/users', endpoint="api_users", methods=['GET'])
 @crossdomain(origin='*')
-@authenticate
+@auth_token_required
 def api_users():
 
     users = []
@@ -42,22 +27,20 @@ def api_users():
 
 @meeple.api.route('/users/self', endpoint="api_user_self", methods=['GET'])
 @crossdomain(origin='*')
-@authenticate
+@auth_token_required
 def api_user_self():
-
-    user = authenticated_user()
-    return api_package(data=user.as_dict())
+    return api_package(data=current_user._get_current_object().as_dict())
 
 @meeple.api.route('/users/<string:user_id>', endpoint="api_user", methods=['GET'])
 @crossdomain(origin='*')
-@authenticate
+@auth_token_required
 def api_user(user_id):
     """
     Return a user.
     """
 
     q = User.authquery()
-    q = q.filter(User.user_string_id == user_id)
+    q = q.filter(User.id == user_id)
     user = q.first()
     if user is None:
         return api_not_found("User")

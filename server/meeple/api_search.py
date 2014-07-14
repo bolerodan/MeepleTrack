@@ -3,7 +3,7 @@ import datetime
 import urllib2
 from flask import request
 from api_tools import api_package, api_error, api_error_missing, api_not_found, verify_email
-from authentication import authenticate, authenticated_user
+from flask.ext.security import auth_token_required,current_user
 from crossdomain import crossdomain
 from game import Game
 from tools import build_search,build_game
@@ -13,7 +13,7 @@ from sqlalchemy.exc import IntegrityError
 
 @meeple.api.route('/search', endpoint="search", methods=['GET'])
 @crossdomain(origin='*')
-@authenticate
+@auth_token_required
 def search():
     r = []
     if 'q' not in request.args:

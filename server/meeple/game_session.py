@@ -10,7 +10,7 @@ from game import Game
 
 gamesession_players = meeple.db.Table('gamesession_players',
     Column('game_session_id', Integer, ForeignKey('game_session.id')),
-    Column('user_id', Integer, ForeignKey('user.user_id'))
+    Column('user_id', Integer, ForeignKey('user.id'))
 )
 
 class GameSession(meeple.db.Model):
@@ -24,23 +24,11 @@ class GameSession(meeple.db.Model):
     end_time = Column(DateTime)
     # public = Column(Boolean,default=False) #if public, people can share a link and see a detailed card about it.
     game_id = Column(Integer, ForeignKey('game.game_id')) #can only be related to one game
-    host_id = Column(Integer, ForeignKey('user.user_id')) #can only have one host, or creator of this session
+    host_id = Column(Integer, ForeignKey('user.id')) #can only have one host, or creator of this session
     players = relationship(User,secondary=gamesession_players,backref="game_sessions") #can have multiple players
     game = relationship(Game)
     host = relationship(User)
 
-    @classmethod
-    def authquery(cls):
-        from authentication import authenticated_user
-        user = authenticated_user()
-        gsp_alias = aliased(gamesession_players)
-        print ""
-        q = cls.query
-        q = q.join(gsp_alias)
-        q = q.filter(gsp_alias.user_id == user.user_id)
-
-        
-        return q
 
     def as_dict(self):
 
@@ -58,7 +46,7 @@ class GameSession(meeple.db.Model):
             from properties import GameSessionProperties
             u = user.as_minimal_dict()
             u['properties'] = []
-            user_props = GameSessionProperties.query.filter(GameSessionProperties.player_id == user.user_id).filter(GameSessionProperties.gamesession_id == self.id).all()
+            user_props = GameSessionProperties.query.filter(GameSessionProperties.player_id == user.id).filter(GameSessionProperties.gamesession_id == self.id).all()
             for prop in user_props:
                 print "prop: ",prop.as_dict()
                 u['properties'].append(prop.as_dict()['property'])

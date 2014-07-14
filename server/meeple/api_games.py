@@ -2,7 +2,7 @@ import meeple
 import datetime
 from flask import request
 from api_tools import api_package, api_error, api_error_missing, api_not_found, verify_email
-from authentication import authenticate, authenticated_user
+from flask.ext.security import auth_token_required,current_user
 
 from achievements import Achievement
 from user import User
@@ -13,7 +13,7 @@ from meeple_exceptions import GameNotFound
 from sqlalchemy.exc import IntegrityError
 
 @meeple.api.route('/games', endpoint="get_games", methods=['GET'])
-@authenticate
+@auth_token_required
 def get_games():
     search = request.args.get('search')
     results = build_search(search)
