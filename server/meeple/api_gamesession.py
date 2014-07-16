@@ -3,25 +3,25 @@ import datetime
 from flask import request
 from cerberus import Validator
 from api_tools import api_package, api_error, api_validation_error,date_parse
-from authentication import authenticate, authenticated_user
 from properties import PropertyDef,Property,GameSessionProperties
-from flask.ext.security import current_user
-from game_session import GameSession
+from flask.ext.security import auth_token_required,current_user
+from game_session import GameSession,GameSessionPlayers
 from game import Game
 from user import User
 from tools import addplayer_helper
 
 @meeple.api.route('/gamesession', endpoint="get_game_sessions", methods=['GET'])
-@authenticate
+@auth_token_required
 def get_game_sessions():
     sessions = []
-    print GameSession.authquery()
-    for session in GameSession.authquery().order_by(GameSession.created.desc()).all():
+    user_id = current_user._get_current_object().id
+    q = GameSession.query.join(GameSessionPlayers).filter(GameSessionPlayers.user_id == user_id,GameSession.host_id == user_id).order_by(GameSession.created).all()
+    for session in q:
         sessions.append(session.as_dict())
     return api_package(data=sessions)
 
 @meeple.api.route('/gamesession/<id>', endpoint="get_game_session", methods=['GET'])
-@authenticate
+@auth_token_required
 def get_game_session(id):
     user = authenticated_user()
     try:
@@ -38,7 +38,7 @@ def get_game_session(id):
 
 
 @meeple.api.route('/gamesession', endpoint="create_game_sessions", methods=['POST'])
-@authenticate
+@auth_token_required
 def create_game_sessions():
 
     form = request.get_json()
@@ -54,20 +54,21 @@ def create_game_sessions():
             }
     v = Validator(schema)
     if v.validate(form) is False:
-        return api_validation_error(v.errors)            
+        return api_validation_error(v.errors)    
+
+    game = Game().query.filter_by(game_id=form['game_id']).first()
+    if game is None:
+        return api_error("There was an issue adding the game to this session.") #this probably shouldnt happen but, we should check anyways
 
     newgamesession = GameSession()
+    user = current_user._get_current_object()
 
-    user = current_user
     if form['host_is_playing'] is True:
         newgamesession.players.append(user) #the user/host is also a player.
         addplayer_helper(newgamesession,user)
 
-    newgamesession.host = user#attach this session to the user creating it, as they are the host.
-    game = Game().query.filter_by(game_id=form['game_id']).first()
+    newgamesession.host = user #attach this session to the user creating it, as they are the host.
 
-    if game is None:
-        return api_error("There was an issue adding the game to this session.") #this probably shouldnt happen but, we should check anyways
     newgamesession.game = game #relate this gamesession to this board game
 
     #name is optional. If left empty, the board games name will be used instead.
@@ -86,7 +87,7 @@ def create_game_sessions():
 
 
 @meeple.api.route('/gamesession/<id>/addplayer', endpoint="add_player_to_session", methods=['POST'])
-@authenticate
+@auth_token_required
 def add_player_to_session(id):    
 
     form = request.get_json()
@@ -127,7 +128,7 @@ def add_player_to_session(id):
 
 
 @meeple.api.route('/gamesession/<id>/property', endpoint="gamesession_property", methods=['POST'])
-@authenticate
+@auth_token_required
 def gamesession_property(id):
     """
     Always check if the user who is doing this,
