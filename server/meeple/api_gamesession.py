@@ -5,6 +5,7 @@ from cerberus import Validator
 from api_tools import api_package, api_error, api_validation_error,date_parse
 from properties import PropertyDef,Property,GameSessionProperties
 from flask.ext.security import auth_token_required,current_user
+from sqlalchemy import or_
 from game_session import GameSession,GameSessionPlayers
 from game import Game
 from user import User
@@ -15,7 +16,7 @@ from tools import addplayer_helper
 def get_game_sessions():
     sessions = []
     user_id = current_user._get_current_object().id
-    q = GameSession.query.join(GameSessionPlayers).filter(GameSessionPlayers.user_id == user_id,GameSession.host_id == user_id).order_by(GameSession.created).all()
+    q = GameSession.query.outerjoin(GameSessionPlayers).filter(or_(GameSessionPlayers.user_id == user_id,GameSession.host_id == user_id)).order_by(GameSession.created).all()
     for session in q:
         sessions.append(session.as_dict())
     return api_package(data=sessions)
@@ -23,7 +24,6 @@ def get_game_sessions():
 @meeple.api.route('/gamesession/<id>', endpoint="get_game_session", methods=['GET'])
 @auth_token_required
 def get_game_session(id):
-    user = authenticated_user()
     try:
         id = int(id)
     except ValueError as e:

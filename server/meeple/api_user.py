@@ -8,7 +8,6 @@ from crossdomain import crossdomain
 from user import User, UserPasswordReset
 
 
-
 @meeple.api.route('/users', endpoint="api_users", methods=['GET'])
 @crossdomain(origin='*')
 @auth_token_required
@@ -71,13 +70,8 @@ def api_user_create():
     if olduser is not None:
         return api_error("Email address already exists")
 
-    newuser = User(email=form["email"], givennames=form["givennames"], lastname=form["lastname"])
+    newuser = meeple.user_datastore.create_user(email=form['email'], password='password',firstname=form['givennames'],lastname=form['lastname'])
     print newuser
-    meeple.db.session.add(newuser)
-    meeple.db.session.commit()
-
-    # Generate the string ID for the user
-    newuser.generate_string_id()
     meeple.db.session.commit()
 
     return api_package(data=newuser.as_dict())
