@@ -8,17 +8,11 @@ from user import User
 from game import Game
 
 
-# gamesession_players = meeple.db.Table('gamesession_players',
-#     Column('game_session_id', Integer, ForeignKey('game_session.id')),
-#     Column('user_id', Integer, ForeignKey('user.id'))
-# )
-
 class GameSessionPlayers(meeple.db.Model):
     __tablename__ = 'gamesession_players'
     game_session_id = Column('game_session_id',Integer, ForeignKey('game_session.id'),primary_key=True)
     user_id = Column('user_id',Integer, ForeignKey('user.id'),primary_key=True)
     game = relationship("GameSession")
-
 
 
 
