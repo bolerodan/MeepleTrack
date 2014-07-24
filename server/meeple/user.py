@@ -50,7 +50,9 @@ class User(meeple.db.Model,UserMixin):
                             backref=backref('users', lazy='dynamic'))
 
 
-
+    def display_name(self):
+        return self.firstname + " " + self.lastname
+        
     def add_achievement(self,achievement_id):
         #now we check if we have this achievement.
         user_achievement = UserAchievement.query.filter(UserAchievement.achievement_id == achievement_id,
@@ -98,6 +100,7 @@ class User(meeple.db.Model,UserMixin):
         result['email'] = self.email
         result['givennames'] = self.firstname
         result['lastname'] = self.lastname
+        result['display_name'] = self.display_name()
 
         return result
     def as_dict(self):
@@ -109,6 +112,7 @@ class User(meeple.db.Model,UserMixin):
         result['email'] = self.email
         result['givennames'] = self.firstname
         result['lastname'] = self.lastname
+        result['display_name'] = self.display_name()
         result['created'] = date_format(self.created)
         result['gravatar_url'] = self.gravatar_url()     
         result['achievements'] = []

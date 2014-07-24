@@ -28,6 +28,7 @@ import meeple.gamemechanic
 import meeple.gamecategory
 import meeple.game
 import meeple.user
+import meeple.friends
 import meeple.game_session
 import meeple.properties
 target_metadata = db.Model.metadata

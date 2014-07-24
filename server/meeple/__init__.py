@@ -15,6 +15,7 @@ api = Blueprint('api', __name__)
 db = SQLAlchemy(app)
 import api_authentication
 import api_user
+import api_friends
 import api_gamesession
 import api_games
 import api_search
