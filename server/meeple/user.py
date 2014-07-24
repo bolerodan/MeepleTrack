@@ -92,7 +92,7 @@ class User(meeple.db.Model,UserMixin):
 
 
     def display_name(self):
-        return self.givennames + ' ' + self.surname
+        return self.firstname + ' ' + self.lastname
 
     def as_minimal_dict(self):
         result = {}
