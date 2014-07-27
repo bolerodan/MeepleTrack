@@ -5,10 +5,11 @@ from cerberus import Validator
 from api_tools import api_package, api_error, api_validation_error,date_parse
 from properties import PropertyDef,Property,GameSessionProperties
 from flask.ext.security import auth_token_required,current_user
-from sqlalchemy import or_
+from sqlalchemy import or_,and_
 from game_session import GameSession,GameSessionPlayers
 from game import Game
 from user import User
+from friends import Friends
 from tools import addplayer_helper
 
 @meeple.api.route('/gamesession', endpoint="get_game_sessions", methods=['GET'])
@@ -91,12 +92,13 @@ def create_game_sessions():
 def add_player_to_session(id):    
 
     form = request.get_json()
+    user = current_user._get_current_object()
     if form is None:
         return api_error("Invalid Request")
     try:
         id = int(id)
     except ValueError as e:
-        return api_error("ID values must be integers only.")
+        return api_error("id values must be integers only.")
 
     schema = {
                 'user_id':{'type':'integer','required':True}
@@ -108,20 +110,20 @@ def add_player_to_session(id):
     gs = GameSession.query.filter_by(id=id).first()
 
     if gs is None:
-        return api_error("Unable to find a game session by that ID")
+        return api_error("Unable to find a game session by that id")
 
-    new_player = User.query.filter_by(id=form['user_id']).first()
+    new_player = Friends.query.filter(and_(Friends.user_id == user.id,Friends.friend_id == form['user_id'])).first()
 
     if new_player is None:
-        return api_error("Unable to find the user_id to add to this game session")  
+        return api_error("Unable to find player to add to this game session")  
 
     #check if this player is already in
-    if new_player in gs.players:
+    if new_player.friend in gs.players:
         return api_error("This player is already in this game session")
 
-    gs.players.append(new_player)
+    gs.players.append(new_player.friend)
 
-    player_props = addplayer_helper(gs,new_player)
+    player_props = addplayer_helper(gs,new_player.friend)
     meeple.db.session.commit()
     return api_package(data=player_props)    
 
