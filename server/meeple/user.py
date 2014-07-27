@@ -53,7 +53,7 @@ class User(meeple.db.Model,UserMixin):
 
     def display_name(self):
         if self.username:
-            return self.username:
+            return self.username
         else:
             return self.firstname + "_" + self.lastname
         
@@ -93,16 +93,11 @@ class User(meeple.db.Model,UserMixin):
                 raise AchievementNotFound("Unknown Achievement to add to user")
 
 
-
-
-    def display_name(self):
-        return self.firstname + ' ' + self.lastname
-
     def as_minimal_dict(self):
         result = {}
         result['id'] = self.id
         result['email'] = self.email
-        result['givennames'] = self.firstname
+        result['firstname'] = self.firstname
         result['lastname'] = self.lastname
         result['username'] = self.display_name()
 
@@ -114,7 +109,7 @@ class User(meeple.db.Model,UserMixin):
 
         result['id'] = self.id
         result['email'] = self.email
-        result['givennames'] = self.firstname
+        result['firstname'] = self.firstname
         result['lastname'] = self.lastname
         result['username'] = self.display_name()
         result['created'] = date_format(self.created)

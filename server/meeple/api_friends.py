@@ -35,6 +35,7 @@ def friends():
 @auth_token_required
 def friend_groups():
     user = current_user._get_current_object()    
+    
     q = FriendsGroup.query.filter(FriendsGroup.user_id == user.id).all()    
     groups = []
     for g in q:
@@ -88,7 +89,8 @@ def add_friend_to_group(id):
 
     if group:
         #lets see if this is a confirmed friend of yours
-        friend = Friend.query.filter(and_(Friend.user_id == user.id,Friend.friend_id == form['id'],Friend.confirmed == True)).first()
+        friend = Friends.query.filter(and_(Friends.user_id == user.id,Friends.friend_id == form['id'],Friends.confirmed == True)).first()
+        print friend
         if friend:
             #lets see if this friend is not in this group
             if friend.group_id == group.id:
