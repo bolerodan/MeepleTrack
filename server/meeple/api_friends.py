@@ -28,7 +28,10 @@ def friends():
         friends.append({'type':'friend','friend':f.as_dict()})
 
     if 'FriendRequests' in args:
+        print "Get requests"
         q = FriendRequests.query.filter(FriendRequests.user_id == user.id).all()
+
+        print q, user.id
         for fr in q:
             friends.append({
                 'type':'friend_request',
@@ -134,10 +137,17 @@ def request_friend():
 
     friend = User.query.filter(User.username == form['username']).first()
     if friend:
+
         #second check, is he already your friend?
         am_i_friend = Friends.query.filter(and_(Friends.user_id == user.id,Friends.friend_id == friend.id)).first()
         if am_i_friend:
-            return api_error("You are already friends")        
+            return api_error("You are already friends")
+
+        #is this already requested?
+        ar = FriendRequests.query.filter(and_(FriendRequests.user_id == friend.id,FriendRequests.friend_id == user.id)).first()
+        if ar:
+            return api_package()
+
         #this is the inverse as to who this is for
         new_request = FriendRequests(user_id=friend.id,friend_id=user.id)
         """
