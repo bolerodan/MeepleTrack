@@ -8,7 +8,7 @@ from flask.ext.security import auth_token_required,current_user
 from sqlalchemy import  or_,and_
 from crossdomain import crossdomain
 from user import User
-from friends import Friends,FriendsGroup
+from friends import Friends,FriendsGroup,FriendRequests
 
 
 @meeple.api.route('/friends', endpoint="friends", methods=['GET'])
@@ -25,7 +25,18 @@ def friends():
         q = Friends.query.filter(Friends.user_id == user.id).all()    
     friends = []
     for f in q:
-        friends.append(f.as_dict())
+        friends.append({'type':'friend','friend':f.as_dict()})
+
+    if 'FriendRequests' in args:
+        q = FriendRequests.query.filter(FriendRequests.user_id == user.id).all()
+        for fr in q:
+            friends.append({
+                'type':'friend_request',
+                'friend_request':{
+                    'id':fr.id,
+                    'username':fr.friend.username
+                    }
+                })
 
     return api_package(data=friends)
 
@@ -89,8 +100,8 @@ def add_friend_to_group(id):
 
     if group:
         #lets see if this is a confirmed friend of yours
-        friend = Friends.query.filter(and_(Friends.user_id == user.id,Friends.friend_id == form['id'],Friends.confirmed == True)).first()
-        print friend
+        friend = Friends.query.filter(and_(Friends.user_id == user.id,Friends.friend_id == form['id'])).first()
+
         if friend:
             #lets see if this friend is not in this group
             if friend.group_id == group.id:
@@ -105,4 +116,66 @@ def add_friend_to_group(id):
         return api_error("This group does not exist.")
 
 
+@meeple.api.route('/friends/request', endpoint="request_friend", methods=['POST'])
+@crossdomain(origin='*')
+@auth_token_required
+def request_friend():
+    user = current_user._get_current_object()
+    form = request.get_json()
+    schema = {
+        'username':{'type':'string','empty':False}
+    }
+    v = Validator(schema)
+    if v.validate(form) is False:
+        return api_validation_error(v.errors)
 
+    friend = User.query.filter(User.username == form['username']).first()
+    if friend:
+        #first check, is this you? You idiot...
+        if friend.id == user.id:
+            return api_error("You cannot friend yourself")
+        #second check, is he already your friend?
+        am_i_friend = Friends.query.filter(and_(Friends.user_id == user.id,Friends.friend_id == friend.id)).first()
+        if am_i_friend:
+            return api_error("You are already friends")        
+        #this is the inverse as to who this is for
+        new_request = FriendRequests(user_id=friend.id,friend_id=user.id)
+        """
+            TODO insert notification event here as well. Notifcation table
+            to show/email that so and so is requesting friendship
+        """
+        meeple.db.session.add(new_request)
+        meeple.db.session.commit()
+        return api_package()
+    else:
+        return api_error("User not found")
+
+@meeple.api.route('/friends/confirm', endpoint="confirm_friend", methods=['POST'])
+@crossdomain(origin='*')
+@auth_token_required
+def confirm_friend():
+    user = current_user._get_current_object()
+    form = request.get_json()
+    schema = {
+        'id':{'type':'integer','empty':False}
+    }
+    v = Validator(schema)
+    if v.validate(form) is False:
+        return api_validation_error(v.errors)
+
+    friend_request = FriendRequests.query.filter(FriendRequests.id == form['id']).first()
+    if friend_request:
+
+        #we are confirming this, so create friendships that last both ways.
+        my_friend = Friends(user_id = user.id,friend_id = friend_request.friend_id)
+        their_friend = Friends(user_id = friend_request.friend_id,friend_id = user.id)
+
+        meeple.db.session.add(my_friend)
+        meeple.db.session.add(their_friend)
+        meeple.db.session.delete(friend_request) #remove this friend request
+        meeple.db.session.commit()
+
+        #now return who this friend is back to them.
+        return api_package(data=my_friend.as_dict())
+    else:
+        return api_error("This request does not exist")

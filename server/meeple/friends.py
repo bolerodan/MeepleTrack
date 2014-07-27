@@ -5,6 +5,16 @@ from sqlalchemy.orm import relationship,aliased
 from sqlalchemy import  Column, Integer, Boolean, DateTime, String, ForeignKey, or_,and_
 from datetime import datetime
 
+
+class FriendRequests(meeple.db.Model):
+    __tablename__ = "friend_requests"
+    id = Column(Integer,primary_key=True)
+    user_id = Column(Integer,ForeignKey("user.id"),primary_key=True)
+    friend_id = Column(Integer,ForeignKey("user.id"),primary_key=True) #who is my friend
+    friend = relationship("User",foreign_keys=friend_id)
+
+
+
 class Friends(meeple.db.Model):
     __tablename__ = "friends"
     user_id = Column(Integer,primary_key=True) #whos friend we are looking for.
@@ -15,12 +25,7 @@ class Friends(meeple.db.Model):
     group = relationship("FriendsGroup",foreign_keys=group_id)
 
     def as_dict(self,group=False):
-        r = {}
-        r['confirmed'] = self.confirmed
-        if self.confirmed:
-            r['friend'] = self.friend.as_minimal_dict()
-        else:
-            r['friend'] = { "username":self.friend.username,"id":self.friend.id}
+        r = self.friend.as_minimal_dict()
         if group:
             r['group'] = self.group.as_dict(friends=False)
         return r
