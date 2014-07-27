@@ -14,6 +14,14 @@ class Friends(meeple.db.Model):
 	friend = relationship("User",foreign_keys=friend_id)
 	group = relationship("FriendsGroup",foreign_keys=group_id)
 
+	def as_dict(self,group=False):
+		r = {}
+		r['confirmed'] = self.confirmed
+		r['friend'] = self.friend.as_minimal_dict()
+		if group:
+			r['group'] = self.group.as_dict(friends=False)
+		return r
+
 class FriendsGroup(meeple.db.Model):
 	__tablename__ = "friends_group"
 	id = Column(Integer,primary_key=True)
@@ -21,16 +29,16 @@ class FriendsGroup(meeple.db.Model):
 	name = Column(String(200))
 	friends = relationship("User",secondary="friends")		
 
-	def as_dict(self):
+	def as_dict(self,friends=True):
 		r = {}
 		r['name'] = self.name
 		r['id'] = self.id
 		r['friends'] = []
-
-		for friend in self.friends:
-			f = {}
-			f['id'] = friend.id
-			f['name'] = friend.as_minimal_dict()
-			r['friends'].append(f)
+		if friends:
+			for friend in self.friends:
+				f = {}
+				f['id'] = friend.id
+				f['name'] = friend.as_minimal_dict()
+				r['friends'].append(f)
 
 		return r
