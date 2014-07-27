@@ -42,6 +42,7 @@ class User(meeple.db.Model,UserMixin):
     current_login_at = Column(DateTime())
     firstname = Column(String(100))
     lastname = Column(String(100))
+    username = Column(String(100))
     login_count = Column(Integer)
     current_login_ip = Column(String(11))
     last_login_ip = Column(String(11))
@@ -51,7 +52,10 @@ class User(meeple.db.Model,UserMixin):
 
 
     def display_name(self):
-        return self.firstname + " " + self.lastname
+        if self.username:
+            return self.username:
+        else:
+            return self.firstname + "_" + self.lastname
         
     def add_achievement(self,achievement_id):
         #now we check if we have this achievement.
@@ -100,7 +104,7 @@ class User(meeple.db.Model,UserMixin):
         result['email'] = self.email
         result['givennames'] = self.firstname
         result['lastname'] = self.lastname
-        result['display_name'] = self.display_name()
+        result['username'] = self.display_name()
 
         return result
     def as_dict(self):
@@ -112,7 +116,7 @@ class User(meeple.db.Model,UserMixin):
         result['email'] = self.email
         result['givennames'] = self.firstname
         result['lastname'] = self.lastname
-        result['display_name'] = self.display_name()
+        result['username'] = self.display_name()
         result['created'] = date_format(self.created)
         result['gravatar_url'] = self.gravatar_url()     
         result['achievements'] = []

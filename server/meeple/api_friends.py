@@ -17,7 +17,7 @@ from friends import Friends,FriendsGroup
 def friends():
     args = request.args
     user = current_user._get_current_object()
-    if 'NoGroups' in args:
+    if 'NoGroup' in args:
         #Lets get friends that are NOT in groups only        
         q = Friends.query.filter(and_(Friends.user_id == user.id,Friends.group_id == None)).all()  
     else:        
@@ -74,17 +74,33 @@ def create_friends_group():
 @meeple.api.route('/friends/groups/<id>', endpoint="add_friend_to_group", methods=['POST'])
 @crossdomain(origin='*')
 @auth_token_required
-def add_friend_to_group():
+def add_friend_to_group(id):
     user = current_user._get_current_object()  
     form = request.get_json()
     schema = {
-                'email':{'type':'string','empty':False},
+                'id':{'type':'integer','empty':False},
             } 
     v = Validator(schema)   
     if v.validate(form) is False:
         return api_validation_error(v.errors)  
     #first see if this is a valid group
-    group = FriendsGroup.query.filter(and_(FriendsGroup.user_id == user.id,FriendsGroup.name == form['name'])).first()
+    group = FriendsGroup.query.filter(and_(FriendsGroup.user_id == user.id,FriendsGroup.id == id)).first()
 
     if group:
-        return api_error("This group name already exists")
+        #lets see if this is a confirmed friend of yours
+        friend = Friend.query.filter(and_(Friend.user_id == user.id,Friend.friend_id == form['id'],Friend.confirmed == True)).first()
+        if friend:
+            #lets see if this friend is not in this group
+            if friend.group_id == group.id:
+                return api_error("This friend is already in this group")
+            else:
+                friend.group_id = group.id
+                meeple.db.session.commit()
+                return api_package()
+        else:
+            return api_error("Friend does not exist")
+    else:
+        return api_error("This group does not exist.")
+
+
+
