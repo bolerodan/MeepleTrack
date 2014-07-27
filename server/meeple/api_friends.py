@@ -128,12 +128,12 @@ def request_friend():
     v = Validator(schema)
     if v.validate(form) is False:
         return api_validation_error(v.errors)
+        #first check, is this you? You idiot...
+    if user.username == form['username']:
+        return api_error("You cannot friend yourself")
 
     friend = User.query.filter(User.username == form['username']).first()
     if friend:
-        #first check, is this you? You idiot...
-        if friend.id == user.id:
-            return api_error("You cannot friend yourself")
         #second check, is he already your friend?
         am_i_friend = Friends.query.filter(and_(Friends.user_id == user.id,Friends.friend_id == friend.id)).first()
         if am_i_friend:
