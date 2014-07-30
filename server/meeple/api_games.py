@@ -7,7 +7,7 @@ from flask.ext.security import auth_token_required,current_user
 from achievements import Achievement
 from user import User
 from game import Game
-from tools import build_search,build_game
+from tools import build_search,build_game,get_expansions
 
 from meeple_exceptions import GameNotFound
 from sqlalchemy.exc import IntegrityError
@@ -50,3 +50,31 @@ def get_game(id):
             meeple.db.session.rollback()
             return api_error("There was a critical error grabbing this game",404)
     return api_package(data=game.as_dict())
+
+@meeple.api.route('/games/<id>/expansions', endpoint="get_gameexpansion", methods=['GET'])
+#@authenticate
+def get_gameexpansion(id):
+    try:
+        id = int(id)
+    except ValueError as e:
+        return api_error("ID values must be integers only.")
+    game = Game.query.filter(Game.game_id == id).first()
+    if not game:
+        return api_error("This game does not exist...yet")    
+    else:
+        expansions = []
+        if len(game.expansions) == 0:
+            """
+                Lets check board game geeks.. if there are indeed
+                no expansions
+            """
+            new_expansions = get_expansions(game)
+            for e in new_expansions:
+                game.expansions.append(e)
+                expansions.append(e.as_dict())
+            meeple.db.session.commit()
+        else:
+            for e in game.expansions:
+                expansions.append(e.as_dict())
+
+        return api_package(data=expansions)

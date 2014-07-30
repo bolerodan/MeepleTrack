@@ -74,14 +74,41 @@ def build_game(gameid,expansions=False):
             if inbound is None and inbound is not True:
                 try:
                     expansion_game = Game.query.filter(Game.game_id == expansion_id).first()  
-                    print expansion_game            
                     if expansion_game is None:              
-                        expansion_game = build_game(expansion_id,True)
-                        print "Expansion ID: ", expansion_game.game_id, " For ID:", gameid
+                        expansion_game = build_game(expansion_id,False)
                     game.expansions.append(expansion_game)
                 except IntegrityError:
                     pass # :(!!!
     return game
+
+
+def get_expansions(game):
+    url = "%s/boardgame/%s" % (settings.BGG_API,game.game_id)
+    response = urllib2.urlopen(url)
+    xml_string = response.read()
+
+    bg_tree = et.fromstring(xml_string)
+
+    if bg_tree.find('boardgame').find('error') is not None:
+        """This happens if BGG cannot find the board game.. so get their error message"""
+        raise GameNotFound(bg_tree.find('boardgame').find('error').attrib['message'])
+    bg_xml = bg_tree.find('boardgame')
+    expansions = []
+    for expansion in bg_xml.iter('boardgameexpansion'):
+        
+        expansion_id = expansion.attrib.get('objectid')
+        inbound = expansion.attrib.get('inbound')
+        if inbound is None and inbound is not True:
+            try:
+                expansion_game = Game.query.filter(Game.game_id == expansion_id).first()  
+                if expansion_game is None:              
+                    expansion_game = build_game(expansion_id,False)
+                    print "ex_game",expansion_game
+                expansions.append(expansion_game)
+            except IntegrityError:
+                pass # :(!!!   
+
+    return expansions
 
 
 

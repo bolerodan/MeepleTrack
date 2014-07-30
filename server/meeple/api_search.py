@@ -41,7 +41,7 @@ def search():
                     r.append(game.as_search())
                 else:
                     try:
-                        game = build_game(result['id'],True)
+                        game = build_game(result['id'],False)
                         meeple.db.session.add(game)
                         meeple.db.session.commit()
                         r.append(game.as_search())
