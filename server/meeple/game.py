@@ -93,6 +93,10 @@ class Game(meeple.db.Model):
         result['id'] = self.game_id
         result['name'] = self.name        
         result['image'] = self.image
+        result['description'] = (self.description[:200] + '..') if len(self.description) > 200 else self.description
+        result['minplayers'] = self.minplayers
+        result['maxplayers'] = self.maxplayers   
+        result['playingtime'] = self.playingtime
         result['thumbnail'] = self.thumbnail      
         return result  
     def as_dict(self):

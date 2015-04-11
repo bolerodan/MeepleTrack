@@ -28,33 +28,46 @@ def search():
     t = request.args['type'].lower()    
     
     if t.startswith('game'):
-        try:
-            bgg_results = build_search(search_q)
-            for result in bgg_results:
+
+        bgg_results = build_search(search_q,id_only=True)
+        bgg_required_games = []        
+        for result in bgg_results:
+            print "FIND GAME LOCALLY",result
+            """
+                get the ID and see if it exists
+                in out DB, if not, build game from
+                bgg_results
+            """
+            game = Game.query.filter(Game.game_id == result).first()
+            if game is not None:
+                r.append(game.as_search())
+            else:
                 """
-                    get the ID and see if it exists
-                    in out DB, if not, build game from
-                    bgg_results
+                put this ID in a list, because these games are not in our
+                DB, so get these from bgg
                 """
-                game = Game.query.filter(Game.game_id == result['id']).first()
-                if game is not None:
-                    r.append(game.as_search())
-                else:
-                    try:
-                        game = build_game(result['id'],False)
-                        meeple.db.session.add(game)
-                        meeple.db.session.commit()
-                        r.append(game.as_search())
-                    except GameNotFound as v:
-                        pass
-                    except IntegrityError as v:
-                        """
-                            Something bad happened here.. an ID already exists..rollback DB
-                            so we dont have incomplete information from this error.
-                        """
-                        meeple.db.session.rollback()
-        except urllib2.HTTPError as e:
-            return api_error("There was an error communication with BGG",401)
+                bgg_required_games.append(result)
+
+        if len(bgg_required_games) > 0:
+            print "FINDING BGG GAMES",bgg_required_games
+            try:
+                try:
+                    game = build_game(bgg_required_games,False)
+                    for g in game:
+                        meeple.db.session.add(g)
+                        r.append(g.as_search())
+                    meeple.db.session.commit()
+                except GameNotFound as v:
+                    pass
+                except IntegrityError as v:
+                    """
+                        Something bad happened here.. an ID already exists..rollback DB
+                        so we dont have incomplete information from this error.
+                    """
+                    meeple.db.session.rollback()
+            except urllib2.HTTPError as e:
+                return api_error("There was an error communication with BGG",401)                
+
     else:
         return api_error("Unknown search type",404)
     return api_package(data=r)

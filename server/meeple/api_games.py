@@ -48,7 +48,7 @@ def get_game(id):
                 so we dont have incomplete information from this error.
             """
             meeple.db.session.rollback()
-            return api_error("There was a critical error grabbing this game",404)
+            return api_error("There was a critical error grabbing this game",401)
     return api_package(data=game.as_dict())
 
 @meeple.api.route('/games/<id>/expansions', endpoint="get_gameexpansion", methods=['GET'])

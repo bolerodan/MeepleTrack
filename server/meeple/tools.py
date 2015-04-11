@@ -38,6 +38,11 @@ def addplayer_helper(gs,new_player):
 
 #gameid comes from BGG api. Not internal
 def build_game(gameid,expansions=False):
+    print "***REQUESTING REMOTE API CALL***"
+    if isinstance(gameid,list):
+        is_list = True
+        print "LIST ",gameid
+        gameid = ",".join(map(str, gameid))
     url = "%s/boardgame/%s" % (settings.BGG_API,gameid)
     response = urllib2.urlopen(url)
     xml_string = response.read()
@@ -48,38 +53,52 @@ def build_game(gameid,expansions=False):
         """This happens if BGG cannot find the board game.. so get their error message"""
         raise GameNotFound(bg_tree.find('boardgame').find('error').attrib['message'])
     bg_xml = bg_tree.find('boardgame')
-    game = Game()
-    game.game_id = gameid
-    game.name = getText(bg_xml,'name')
-    game.thumbnail = getText(bg_xml,'thumbnail')
-    game.image = getText(bg_xml,'image')
-    game.minplayers = getText(bg_xml,'minplayers')
-    game.yearpublished = getText(bg_xml,'yearpublished')
-    game.maxplayers = getText(bg_xml,'maxplayers')
-    game.playingtime = getText(bg_xml,'playingtime')
-    game.description = getText(bg_xml,'description')
-    for publisher in bg_xml.iter('boardgamepublisher'):
-        game.addPublisher(publisher.text)
-    for category in bg_xml.iter('boardgamecategory'):
-        game.addCategory(category.text)
-    for mechanic in bg_xml.iter('boardgamemechanic'):
-        game.addMechanic(mechanic.text)
-    if expansions:     
-        import meeple
-        meeple.db.session.flush() #this is needed for expansions. Incase we get duplicate IDs
-        for expansion in bg_xml.iter('boardgameexpansion'):
-            
-            expansion_id = expansion.attrib.get('objectid')
-            inbound = expansion.attrib.get('inbound')
-            if inbound is None and inbound is not True:
-                try:
-                    expansion_game = Game.query.filter(Game.game_id == expansion_id).first()  
-                    if expansion_game is None:              
-                        expansion_game = build_game(expansion_id,False)
-                    game.expansions.append(expansion_game)
-                except IntegrityError:
-                    pass # :(!!!
-    return game
+
+    games = []
+    for g in bg_tree.iter('boardgame'):
+        try:
+            game = Game()
+            game.game_id = g.attrib.get('objectid')
+            game.name = getText(g,'name')
+            game.thumbnail = getText(g,'thumbnail')
+            game.image = getText(g,'image')
+            game.minplayers = getText(g,'minplayers')
+            game.yearpublished = getText(g,'yearpublished')
+            game.maxplayers = getText(g,'maxplayers')
+            game.playingtime = getText(g,'playingtime')
+            game.description = getText(g,'description')
+            for publisher in g.iter('boardgamepublisher'):
+                game.addPublisher(publisher.text)
+            for category in g.iter('boardgamecategory'):
+                game.addCategory(category.text)
+            for mechanic in g.iter('boardgamemechanic'):
+                game.addMechanic(mechanic.text)
+            if expansions:     
+                import meeple
+                print "Get expansion for id ",game.game_id
+                meeple.db.session.flush() #this is needed for expansions. Incase we get duplicate IDs
+                for expansion in g.iter('boardgameexpansion'):
+                    
+                    expansion_id = expansion.attrib.get('objectid')
+                    print "Expansion ID",expansion_id
+                    inbound = expansion.attrib.get('inbound')
+                    if inbound is None and inbound is not True:
+                        try:
+                            expansion_game = Game.query.filter(Game.game_id == expansion_id).first()  
+                            if expansion_game is None:              
+                                expansion_game = build_game(expansion_id,False)
+                            game.expansions.append(expansion_game)
+                        except IntegrityError:
+                            pass # :(!!!
+            games.append(game)
+        except IntegrityError:
+            pass
+
+    if is_list:
+        #if we are list of ids, return a list of games
+        return games
+    else:
+        return games[0]
 
 
 def get_expansions(game):
@@ -112,7 +131,7 @@ def get_expansions(game):
 
 
 
-def build_search(term):
+def build_search(term,id_only=False):
     url = "%s/search?search=%s" % (settings.BGG_API,term)
     response = urllib2.urlopen(url)
     xml_string = response.read()
@@ -120,9 +139,12 @@ def build_search(term):
     results = []
     sr_tree = et.fromstring(xml_string) 
     for r in sr_tree:
-        result = {}
-        result['name'] = r.find('name').text
-        result['id'] = r.attrib['objectid']
-        result['thumbnail'] = getText(r,'thumbnail')
+        if id_only:
+            result = r.attrib['objectid']
+        else:
+            result = {}
+            result['name'] = r.find('name').text
+            result['id'] = r.attrib['objectid']
+            result['thumbnail'] = getText(r,'thumbnail')
         results.append(result)
     return results
